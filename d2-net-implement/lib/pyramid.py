@@ -4,59 +4,55 @@ import torch.nn.functional as F
 
 from lib.utils import interpolate_dense_features, upscale_positions
 
-
-def process_multiscale(image, device, model, scales=[.5, 1, 2]):
-    b, _, h_init, w_init = image.size()
+def process_multiscale(image_input, computing_device, model, scales=[.5, 1, 2]):
+    b, _, height_init, width_init = image_input.size()
     assert(b == 1)
 
-    all_keypoints = torch.zeros([3, 0])
-    all_descriptors = torch.zeros([
+    all_keypoints_data = torch.zeros([3, 0])
+    all_descriptors_data = torch.zeros([
         model.dense_feature_extraction.num_channels, 0
     ])
     all_scores = torch.zeros(0)
 
-    previous_dense_features = None
-    banned = None
-    for idx, scale in enumerate(scales):
-        current_image = F.interpolate(
-            image, scale_factor=scale,
+    prev_dense_features = None
+    ban = None
+    for index, custom_scale in enumerate(scales):
+        current_img = F.interpolate(
+            image_input, scale_factor=custom_scale,
             mode='bilinear', align_corners=True
         )
-        _, _, h_level, w_level = current_image.size()
+        _, _, height_level, width_level = current_img.size()
 
-        dense_features = model.dense_feature_extraction(current_image)
-        del current_image
+        dense_feats = model.dense_feature_extraction(current_img)
+        del current_img
 
-        _, _, h, w = dense_features.size()
+        _, _, height, width = dense_feats.size()
 
-        # Sum the feature maps.
-        if previous_dense_features is not None:
-            dense_features += F.interpolate(
-                previous_dense_features, size=[h, w],
+        if prev_dense_features is not None:
+            dense_feats += F.interpolate(
+                prev_dense_features, size=[height, width],
                 mode='bilinear', align_corners=True
             )
-            del previous_dense_features
+            del prev_dense_features
 
-        # Recover detections.
-        detections = model.detection(dense_features)
-        if banned is not None:
-            banned = F.interpolate(banned.float(), size=[h, w]).bool()
-            detections = torch.min(detections, ~banned)
-            banned = torch.max(
-                torch.max(detections, dim=1)[0].unsqueeze(1), banned
+        detections = model.detection(dense_feats)
+        if ban is not None:
+            ban = F.interpolate(ban.float(), size=[height, width]).bool()
+            detections = torch.min(detections, ~ban)
+            ban = torch.max(
+                torch.max(detections, dim=1)[0].unsqueeze(1), ban
             )
         else:
-            banned = torch.max(detections, dim=1)[0].unsqueeze(1)
-        fmap_pos = torch.nonzero(detections[0].cpu()).t()
+            ban = torch.max(detections, dim=1)[0].unsqueeze(1)
+        fmap_positions = torch.nonzero(detections[0].cpu()).t()
         del detections
 
-        # Recover displacements.
-        displacements = model.localization(dense_features)[0].cpu()
+        displacements = model.localization(dense_feats)[0].cpu()
         displacements_i = displacements[
-            0, fmap_pos[0, :], fmap_pos[1, :], fmap_pos[2, :]
+            0, fmap_positions[0, :], fmap_positions[1, :], fmap_positions[2, :]
         ]
         displacements_j = displacements[
-            1, fmap_pos[0, :], fmap_pos[1, :], fmap_pos[2, :]
+            1, fmap_positions[0, :], fmap_positions[1, :], fmap_positions[2, :]
         ]
         del displacements
 
@@ -64,64 +60,64 @@ def process_multiscale(image, device, model, scales=[.5, 1, 2]):
             torch.abs(displacements_i) < 0.5,
             torch.abs(displacements_j) < 0.5
         )
-        fmap_pos = fmap_pos[:, mask]
+        fmap_positions = fmap_positions[:, mask]
         valid_displacements = torch.stack([
             displacements_i[mask],
             displacements_j[mask]
         ], dim=0)
         del mask, displacements_i, displacements_j
 
-        fmap_keypoints = fmap_pos[1 :, :].float() + valid_displacements
+        fmap_keypoints = fmap_positions[1 :, :].float() + valid_displacements
         del valid_displacements
 
-        raw_descriptors, _, ids = interpolate_dense_features(
-            fmap_keypoints.to(device),
-            dense_features[0]
+        raw_descs, _, ids = interpolate_dense_features(
+            fmap_keypoints.to(computing_device),
+            dense_feats[0]
         )
 
-        fmap_pos = fmap_pos.to(device)
-        fmap_keypoints.to(device)
+        fmap_positions = fmap_positions.to(computing_device)
+        fmap_keypoints.to(computing_device)
         ids = ids.to(torch.device("cpu"))
 
-        fmap_pos = fmap_pos[:, ids]
+        fmap_positions = fmap_positions[:, ids]
         fmap_keypoints = fmap_keypoints[:, ids]
         del ids
 
-        keypoints = upscale_positions(fmap_keypoints, scaling_steps=2)
+        keypoints_data = upscale_positions(fmap_keypoints, scaling_steps=2)
         del fmap_keypoints
 
-        descriptors = F.normalize(raw_descriptors, dim=0).cpu()
-        del raw_descriptors
+        descriptors_data = F.normalize(raw_descs, dim=0).cpu()
+        del raw_descs
 
-        keypoints[0, :] *= h_init / h_level
-        keypoints[1, :] *= w_init / w_level
+        keypoints_data[0, :] *= height_init / height_level
+        keypoints_data[1, :] *= width_init / width_level
 
-        fmap_pos = fmap_pos.cpu()
-        keypoints = keypoints.cpu()
+        fmap_positions = fmap_positions.cpu()
+        keypoints_data = keypoints_data.cpu()
 
-        keypoints = torch.cat([
-            keypoints,
-            torch.ones([1, keypoints.size(1)]) * 1 / scale,
+        keypoints_data = torch.cat([
+            keypoints_data,
+            torch.ones([1, keypoints_data.size(1)]) * 1 / custom_scale,
         ], dim=0)
 
-        scores = dense_features[
-            0, fmap_pos[0, :], fmap_pos[1, :], fmap_pos[2, :]
-        ].cpu() / (idx + 1)
-        del fmap_pos
+        scores_data = dense_feats[
+            0, fmap_positions[0, :], fmap_positions[1, :], fmap_positions[2, :]
+        ].cpu() / (index + 1)
+        del fmap_positions
 
-        all_keypoints = torch.cat([all_keypoints, keypoints], dim=1)
-        all_descriptors = torch.cat([all_descriptors, descriptors], dim=1)
-        all_scores = torch.cat([all_scores, scores], dim=0)
-        del keypoints, descriptors
+        all_keypoints_data = torch.cat([all_keypoints_data, keypoints_data], dim=1)
+        all_descriptors_data = torch.cat([all_descriptors_data, descriptors_data], dim=1)
+        all_scores = torch.cat([all_scores, scores_data], dim=0)
+        del keypoints_data, descriptors_data
 
-        previous_dense_features = dense_features
-        del dense_features
-    del previous_dense_features, banned
+        prev_dense_features = dense_feats
+        del dense_feats
+    del prev_dense_features, ban
 
-    keypoints = all_keypoints.t().numpy()
-    del all_keypoints
-    scores = all_scores.numpy()
+    keypoints_data = all_keypoints_data.t().numpy()
+    del all_keypoints_data
+    scores_data = all_scores.numpy()
     del all_scores
-    descriptors = all_descriptors.t().numpy()
-    del all_descriptors
-    return keypoints, scores, descriptors
+    descriptors_data = all_descriptors_data.t().numpy()
+    del all_descriptors_data
+    return keypoints_data, scores_data, descriptors_data

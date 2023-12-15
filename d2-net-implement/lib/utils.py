@@ -26,9 +26,7 @@ def preprocess_image(image, preprocessing=None):
 
 def interpolate_dense_features(pos, dense_features, return_corners=False):
     device = pos.device
-
     ids = torch.arange(0, pos.size(1), device=device)
-
     _, h, w = dense_features.size()
 
     i = pos[0, :]
@@ -106,7 +104,6 @@ def upscale_positions(pos, scaling_steps=0):
     for _ in range(scaling_steps):
         pos = pos * 2 + 0.5
     return pos
-
 
 def downscale_positions(pos, scaling_steps=0):
     for _ in range(scaling_steps):
