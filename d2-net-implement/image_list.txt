@@ -1,0 +1,6 @@
+img/pair_1/1.jpg
+img/pair_1/2.jpg
+img/pair_2/1.jpg
+img/pair_2/2.jpg
+img/pair_3/1.jpg
+img/pair_3/2.jpg
