@@ -42,7 +42,7 @@ for imageName in imageList:
 
 imageList = []
 imagesBW = []
-for i in range(5017):
+for i in range(100):
     try:
         imgid = "{:04d}".format(i)
         dir_img0 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_50/scene_" + str(i) + "/" + imgid + "_0.jpg"
@@ -88,9 +88,7 @@ for i,image in enumerate(imagesBW):
 
 
 end = time.perf_counter()
-
 time_use = end - start
-
 print("time use for extraction is: %f seconds"%(time_use))
 
 
@@ -141,8 +139,6 @@ def fetchDescriptorFromFile(i):
     file.close()
     return descriptor
 
-start = time.perf_counter()
-
 # knn matching
 bf = cv2.BFMatcher()
 def calculateMatches(des1,des2):
@@ -171,7 +167,6 @@ def calculateMatches(des1,des2):
                 topResults.append(match1)
     return topResults
 
-end = time.perf_counter()
 
 # calculate results for image pairs
 def calculateScore(matches,keypoint1,keypoint2):
@@ -201,6 +196,7 @@ def getPlotFor(i,j,keypoint1,keypoint2,matches):
 
 
 def calculateResultsFor(i,j):
+    
     print("Comparision between files:")
     print("    ",imageList[i])
     print("    ",imageList[j])
@@ -220,6 +216,7 @@ def calculateResultsFor(i,j):
 #calculateResultsFor(11,10)
     
 def calculateResultsForScene(p):
+    #start = time.perf_counter()
     i = 2*p
     j = 2*p+1
     print("Comparision between files:")
@@ -238,12 +235,18 @@ def calculateResultsForScene(p):
     print("    Second image: ",len(keypoint2))
     print("Number of matches: ",len(matches))
     print("Similarity score of pictures is: ",score)
+    #end = time.perf_counter()
+    #time_use = end - start
+    #print("time use for matching is: %f seconds"%(time_use))
     plt.imshow(plot)
     plt.axis('off')
-    plt.show()
+    #plt.show()
 
-calculateResultsForScene(11)
+#calculateResultsForScene(11)
 
+start = time.perf_counter()
+for i in range(50):
+    calculateResultsForScene(i)
+end = time.perf_counter()
 time_use = end - start
-
 print("time use for matching is: %f seconds"%(time_use))
