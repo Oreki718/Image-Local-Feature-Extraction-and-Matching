@@ -45,8 +45,8 @@ imagesBW = []
 for i in range(5017):
     try:
         imgid = "{:04d}".format(i)
-        dir_img0 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_200/scene_" + str(i) + "/" + imgid + "_0.jpg"
-        dir_img1 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_200/scene_" + str(i) + "/" + imgid + "_1.jpg"
+        dir_img0 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_50/scene_" + str(i) + "/" + imgid + "_0.jpg"
+        dir_img1 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_50/scene_" + str(i) + "/" + imgid + "_1.jpg"
         imageList.append(dir_img0)
         imageList.append(dir_img1)
         imagesBW.append(imageResizeTrain(cv2.imread(dir_img0,0))) # flag 0 means grayscale
