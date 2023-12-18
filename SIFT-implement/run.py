@@ -29,24 +29,14 @@ def imageResizeTest(image):
     image = cv2.resize(image,newSize)
     return image
 
-'''
-# Define a list of images the way you like
-imageList = ["taj1.jpg","taj2.jpg","eiffel1.jpg","eiffel2.jpg","liberty1.jpg","liberty2.jpg","robert1.jpg","tom1.jpg","ironman1.jpg","ironman2.jpg","ironman3.jpg","darkknight1.jpg","darkknight2.jpg","book1.jpg","book2.jpg"]
-
-# We use grayscale images for generating keypoints
-imagesBW = []
-for imageName in imageList:
-    imagePath = "data/images/" + str(imageName)
-    imagesBW.append(imageResizeTrain(cv2.imread(imagePath,0))) # flag 0 means grayscale
-'''
-
+# image readin
 imageList = []
 imagesBW = []
-for i in range(100):
+for i in range(5017):
     try:
         imgid = "{:04d}".format(i)
-        dir_img0 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_50/scene_" + str(i) + "/" + imgid + "_0.jpg"
-        dir_img1 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_50/scene_" + str(i) + "/" + imgid + "_1.jpg"
+        dir_img0 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_200/scene_" + str(i) + "/" + imgid + "_0.jpg"
+        dir_img1 = "/home/ddd/Downloads/Image-Local-Feature-Extraction-and-Matching/SIFT-implement/data/dataset_200/scene_" + str(i) + "/" + imgid + "_1.jpg"
         imageList.append(dir_img0)
         imageList.append(dir_img1)
         imagesBW.append(imageResizeTrain(cv2.imread(dir_img0,0))) # flag 0 means grayscale
@@ -89,7 +79,7 @@ for i,image in enumerate(imagesBW):
 
 end = time.perf_counter()
 time_use = end - start
-print("time use for extraction is: %f seconds"%(time_use))
+print("time use for extraction of all pictures is: %f seconds"%(time_use))
 
 
 # store keypoints an descripters
@@ -138,6 +128,7 @@ def fetchDescriptorFromFile(i):
     descriptor = pickle.load(file)
     file.close()
     return descriptor
+
 
 # knn matching
 bf = cv2.BFMatcher()
@@ -193,30 +184,9 @@ def getPlotFor(i,j,keypoint1,keypoint2,matches):
     image1 = imageResizeTest(cv2.imread(imageList[i]))
     image2 = imageResizeTest(cv2.imread(imageList[j]))
     return getPlot(image1,image2,keypoint1,keypoint2,matches)
-
-
-def calculateResultsFor(i,j):
-    
-    print("Comparision between files:")
-    print("    ",imageList[i])
-    print("    ",imageList[j])
-    keypoint1 = fetchKeypointFromFile(i)
-    descriptor1 = fetchDescriptorFromFile(i)
-    keypoint2 = fetchKeypointFromFile(j)
-    descriptor2 = fetchDescriptorFromFile(j)
-    matches = calculateMatches(descriptor1, descriptor2)
-    score = calculateScore(len(matches),len(keypoint1),len(keypoint2))
-    plot = getPlotFor(i,j,keypoint1,keypoint2,matches)
-    print(len(matches),len(keypoint1),len(keypoint2),len(descriptor1),len(descriptor2))
-    print(score)
-    plt.imshow(plot)
-    plt.axis('off')
-    plt.show()
-
-#calculateResultsFor(11,10)
     
 def calculateResultsForScene(p):
-    #start = time.perf_counter()
+    start1 = time.perf_counter()
     i = 2*p
     j = 2*p+1
     print("Comparision between files:")
@@ -235,9 +205,9 @@ def calculateResultsForScene(p):
     print("    Second image: ",len(keypoint2))
     print("Number of matches: ",len(matches))
     print("Similarity score of pictures is: ",score)
-    #end = time.perf_counter()
-    #time_use = end - start
-    #print("time use for matching is: %f seconds"%(time_use))
+    end1 = time.perf_counter()
+    time_use = end1 - start1
+    print("time use for matching of single pair is: %f seconds"%(time_use))
     plt.imshow(plot)
     plt.axis('off')
     #plt.show()
@@ -245,8 +215,8 @@ def calculateResultsForScene(p):
 #calculateResultsForScene(11)
 
 start = time.perf_counter()
-for i in range(50):
+for i in range(int(len(imageList)/2)):
     calculateResultsForScene(i)
 end = time.perf_counter()
 time_use = end - start
-print("time use for matching is: %f seconds"%(time_use))
+print("time use for matching of all pairs is: %f seconds"%(time_use))
